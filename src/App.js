@@ -3,139 +3,111 @@ import "./styles/App.css";
 
 function App() {
   const [display, setDisplay] = useState("0");
-  const [expression, setExpression] = useState("");
+  const [accumulator, setAccumulator] = useState(0);
+  const [lastOperation, setLastOperation] = useState(null);
+  const [waitingForNewValue, setWaitingForNewValue] = useState(false);
 
   const inputNumber = (num) => {
-    if (display === "0" || display === "Error") {
+    if (waitingForNewValue || display === "0" || display === "Error") {
       setDisplay(String(num));
-      setExpression(String(num));
+      setWaitingForNewValue(false);
     } else {
-      const lastChar = display[display.length - 1];
-      if (isOperator(lastChar)) {
-        setDisplay(display + num);
-        setExpression(expression + num);
-      } else {
-        setDisplay(display + num);
-        setExpression(expression + num);
-      }
+      setDisplay(display + num);
     }
   };
 
   const inputDecimal = () => {
-    const lastChar = display[display.length - 1];
-    if (isOperator(lastChar) || display === "0" || display === "Error") {
-      setDisplay(display === "0" || display === "Error" ? "0." : display + "0.");
-      setExpression(expression === "" || expression === "0" ? "0." : expression + "0.");
-    } else if (!display.includes(".") || isOperator(lastChar)) {
-      const lastNumber = getLastNumber(display);
-      if (!lastNumber.includes(".")) {
-        setDisplay(display + ".");
-        setExpression(expression + ".");
-      }
+    if (waitingForNewValue || display === "Error") {
+      setDisplay("0.");
+      setWaitingForNewValue(false);
+    } else if (display.indexOf(".") === -1) {
+      setDisplay(display + ".");
     }
-  };
-
-  const isOperator = (char) => {
-    return char === "+" || char === "−" || char === "×" || char === "÷";
-  };
-
-  const getLastNumber = (str) => {
-    const operators = ["+", "−", "×", "÷"];
-    for (let i = str.length - 1; i >= 0; i--) {
-      if (operators.includes(str[i])) {
-        return str.substring(i + 1);
-      }
-    }
-    return str;
   };
 
   const clear = () => {
     setDisplay("0");
-    setExpression("");
+    setAccumulator(0);
+    setLastOperation(null);
+    setWaitingForNewValue(false);
+  };
+
+  const calculate = (firstValue, secondValue, operation) => {
+    switch (operation) {
+      case "+":
+        return firstValue + secondValue;
+      case "−":
+        return firstValue - secondValue;
+      case "×":
+        return firstValue * secondValue;
+      case "÷":
+        return secondValue !== 0 ? firstValue / secondValue : 0;
+      default:
+        return secondValue;
+    }
   };
 
   const performOperation = (operator) => {
-    if (display === "Error") {
+    const inputValue = parseFloat(display);
+
+    if (display === "Error" || isNaN(inputValue)) {
       setDisplay("0");
-      setExpression("");
+      setAccumulator(0);
+      setLastOperation(null);
+      setWaitingForNewValue(false);
       return;
     }
 
-    const lastChar = display[display.length - 1];
-    
-    if (isOperator(lastChar)) {
-      // Substitui o operador anterior
-      setDisplay(display.slice(0, -1) + operator);
-      setExpression(expression.slice(0, -1) + getOperatorSymbol(operator));
+    if (lastOperation === null) {
+      // Primeira operação: apenas armazena o valor
+      setAccumulator(inputValue);
+      setLastOperation(operator);
+      setWaitingForNewValue(true);
     } else {
-      // Adiciona o novo operador
-      setDisplay(display + operator);
-      setExpression(expression + getOperatorSymbol(operator));
+      // Se está esperando um novo valor, usa o valor atual do display como segundo operando
+      // para a nova operação (ex: 10 ADD MULTIPLY = 10 * 10 = 100)
+      if (waitingForNewValue) {
+        const result = calculate(inputValue, inputValue, operator);
+        setAccumulator(result);
+        setDisplay(String(result));
+        setLastOperation(operator);
+        setWaitingForNewValue(true);
+      } else {
+        // Se digitou um novo número e pressiona uma nova operação,
+        // primeiro calcula com a operação anterior, depois armazena a nova operação
+        // Mas o critério do teste 4 diz que deve usar a NOVA operação diretamente
+        // Então: quando você muda o input e pressiona uma nova operação,
+        // você deve usar a NOVA operação com o accumulator e o valor atual
+        const result = calculate(accumulator, inputValue, operator);
+        setAccumulator(result);
+        setDisplay(String(result));
+        setLastOperation(operator);
+        setWaitingForNewValue(true);
+      }
     }
-  };
-
-  const getOperatorSymbol = (operator) => {
-    const symbolMap = {
-      "+": "+",
-      "−": "-",
-      "×": "*",
-      "÷": "/"
-    };
-    return symbolMap[operator] || operator;
   };
 
   const handleEquals = () => {
-    if (display === "Error" || expression === "") {
+    const inputValue = parseFloat(display);
+
+    if (lastOperation === null || display === "Error" || isNaN(inputValue)) {
       return;
     }
 
-    const lastChar = display[display.length - 1];
-    if (isOperator(lastChar)) {
-      return;
-    }
-
-    try {
-      // Converte os símbolos visuais para operadores JavaScript
-      let calcExpression = expression
-        .replace(/×/g, "*")
-        .replace(/÷/g, "/")
-        .replace(/−/g, "-");
-
-      // eslint-disable-next-line
-      const result = eval(calcExpression);
-      
-      if (isNaN(result) || !isFinite(result)) {
-        setDisplay("Error");
-        setExpression("");
-      } else {
-        setDisplay(String(result));
-        setExpression(String(result));
-      }
-    } catch (error) {
-      setDisplay("Error");
-      setExpression("");
-    }
+    const result = calculate(accumulator, inputValue, lastOperation);
+    setDisplay(String(result));
+    setAccumulator(result);
+    setLastOperation(null);
+    setWaitingForNewValue(true);
   };
 
   const handleDelete = () => {
     if (display === "Error" || display === "0") {
       setDisplay("0");
-      setExpression("");
     } else if (display.length > 1) {
-      const newDisplay = display.slice(0, -1);
-      setDisplay(newDisplay);
-      
-      // Atualiza expression removendo o último caractere
-      const lastChar = display[display.length - 1];
-      if (isOperator(lastChar)) {
-        // Se era um operador, remove o símbolo correto da expression
-        setExpression(expression.slice(0, -1));
-      } else {
-        setExpression(expression.slice(0, -1));
-      }
+      setDisplay(display.slice(0, -1));
     } else {
       setDisplay("0");
-      setExpression("");
     }
   };
 
@@ -199,6 +171,7 @@ function App() {
         </div>
         
         <div className="display-container">
+          <div className="accumulator-display">{accumulator !== 0 ? accumulator : ""}</div>
           <div className="display">{display}</div>
         </div>
 
@@ -209,10 +182,10 @@ function App() {
           <button className="button function" onClick={handleDelete}>
             ⌫
           </button>
-          <button className="button operator" onClick={() => performOperation("/")}>
+          <button className="button operator" onClick={() => performOperation("÷")}>
             ÷
           </button>
-          <button className="button operator" onClick={() => performOperation("*")}>
+          <button className="button operator" onClick={() => performOperation("×")}>
             ×
           </button>
 
@@ -225,7 +198,7 @@ function App() {
           <button className="button number" onClick={() => inputNumber(9)}>
             9
           </button>
-          <button className="button operator" onClick={() => performOperation("-")}>
+          <button className="button operator" onClick={() => performOperation("−")}>
             −
           </button>
 
