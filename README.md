@@ -60,6 +60,6 @@ Este projeto faz parte do curso **React Basics** da **Formação Frontend da Met
 
 ---
 
-**Curso:** Meta Front-End Developer Professional Certificate - HTML and CSS in depth (Curso 5 de 9) /n
-**Plataforma:** Coursera /n
-**Ano:** 2025 /n
+**Curso:** Meta Front-End Developer Professional Certificate - HTML and CSS in depth (Curso 5 de 9)  
+**Plataforma:** Coursera  
+**Ano:** 2025  
