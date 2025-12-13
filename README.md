@@ -57,3 +57,9 @@ Este projeto faz parte do curso **React Basics** da **Formação Frontend da Met
 - React 19.2.0
 - CSS3 (com animações e gradientes)
 - Create React App
+
+---
+
+**Curso:** Meta Front-End Developer Professional Certificate - HTML and CSS in depth (Curso 5 de 9)
+**Plataforma:** Coursera
+**Ano:** 2025
